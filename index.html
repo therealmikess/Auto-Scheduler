@@ -4,464 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Auto-Scheduler App</title>
-  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkF1dG8tU2NoZWR1bGVyIEFwcCIsCiAgInNob3J0X25hbWUiOiAiU2NoZWR1bGVyIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGYxNzJhIiwKICAidGhlbWVfY29sb3IiOiAiIzBmMTcyYSIKfQ==">
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkF1dG8tU2NoZWR1bGVyIEFwcCIsCiAgInNob3J0X25hbWUiOiAiU2NoZWR1bGVyIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGE0MWQ5IiwKICAidGhlbWVfY29sb3IiOiAiIzBhNDFkOSIKfQ==">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --panel-dark: #1e293b;
-      --card-dark: #334155;
+      --bg-dark: #0a0d14;
+      --sidebar-bg: #121824;
+      --card-bg: rgba(22, 30, 46, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
       --accent: #ff3b5c;
-      --text-main: #f8fafc;
+      --accent-glow: rgba(255, 59, 92, 0.35);
+      --accent-blue: #3b82f6;
+      --text-main: #f1f5f9;
       --text-muted: #94a3b8;
-      --border: #475569;
+      --radius: 14px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
     /* Sidebar */
-    .sidebar { width: 280px; background: #090d16; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; gap: 20px; }
-    .brand { font-size: 1.2rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 10px; }
-    
+    .sidebar { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; padding: 24px 18px; gap: 24px; z-index: 10; }
+    .brand { font-size: 1.25rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
+    .brand i { color: var(--accent); font-size: 1.4rem; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+
     /* Calendar Widget */
-    .cal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 10px; font-size: 0.9rem; }
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.8rem; }
-    .cal-day-label { color: var(--text-muted); padding-bottom: 4px; font-weight: bold; }
-    .cal-date { padding: 6px 0; border-radius: 6px; cursor: pointer; color: var(--text-muted); transition: 0.2s; }
-    .cal-date:hover { background: var(--card-dark); color: #fff; }
-    .cal-date.active { background: var(--accent); color: #fff; font-weight: bold; }
+    .cal-widget { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 14px; backdrop-filter: blur(10px); }
+    .cal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; color: var(--text-main); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .cal-day-label { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; padding-bottom: 6px; }
+    .cal-date { padding: 7px 0; border-radius: 8px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+    .cal-date:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .cal-date.active { background: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 0 12px var(--accent-glow); }
     .cal-date.today { border: 1px solid var(--accent); }
 
     /* Nav items */
-    .nav-list { display: flex; flex-direction: column; gap: 6px; }
-    .nav-item { padding: 10px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-muted); transition: 0.2s; }
-    .nav-item:hover, .nav-item.active { background: var(--panel-dark); color: var(--text-main); }
+    .nav-list { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+    .nav-item { padding: 12px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.05); color: #fff; }
+    .nav-item.active { border-left: 3px solid var(--accent); }
 
     /* Main Area */
-    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .top-bar { height: 70px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 30px; background: var(--panel-dark); }
-    .date-nav { display: flex; align-items: center; gap: 15px; }
-    .date-btn { background: var(--card-dark); border: none; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-    .date-btn:hover { background: var(--border); }
-    .clock-display { font-size: 1.1rem; font-weight: 600; font-mono: monospace; background: var(--bg-dark); padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); }
-
-    /* Workspace */
-    .workspace { flex: 1; display: flex; padding: 20px; gap: 20px; overflow-y: auto; }
-    .schedule-panel { flex: 2; display: flex; flex-direction: column; gap: 15px; }
-    .side-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-
-    /* Active Hours & Controls */
-    .control-card { background: var(--panel-dark); border-radius: 12px; padding: 15px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .btn-action { background: var(--accent); border: none; color: white; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .btn-action:hover { opacity: 0.9; }
-
-    /* Task Cards & Dragging */
-    .task-list { display: flex; flex-direction: column; gap: 10px; min-height: 100px; }
-    .task-card { background: var(--panel-dark); border-radius: 10px; padding: 14px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; cursor: grab; transition: transform 0.15s, border-color 0.15s; }
-    .task-card:active { cursor: grabbing; }
-    .task-card.dragging { opacity: 0.4; border: 2px dashed var(--accent); }
-    .task-card.drop-target-above { border-top: 4px solid var(--accent); }
-    .task-card.drop-target-below { border-bottom: 4px solid var(--accent); }
-    .task-card.completed { opacity: 0.6; text-decoration: line-through; }
-
-    .task-info { display: flex; align-items: center; gap: 12px; }
-    .drag-handle { color: var(--text-muted); cursor: grab; font-size: 1.2rem; }
-
-    /* Notes Scratchpad */
-    .notes-card { background: var(--panel-dark); border-radius: 12px; padding: 15px; border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column; gap: 10px; }
-    .notes-card textarea { width: 100%; flex: 1; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text-main); resize: none; font-size: 0.95rem; }
-
-    /* Modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100; }
-    .modal { background: var(--panel-dark); width: 420px; border-radius: 12px; border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-  </style>
-</head>
-<body>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="brand">⚡ AutoScheduler</div>
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(circle at top right, rgba(255, 59, 92, 0.05), transparent 40%); }
+    .top-bar { height: 75px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; padding: 0 32px; background: rgba(18, 24, 36, 0.6); backdrop-filter: blur(15px); }
     
-    <!-- Mini Calendar -->
-    <div>
-      <div class="cal-header">
-        <span id="cal-month-year">October 2026</span>
-      </div>
-      <div class="cal-grid" id="cal-grid-labels">
-        <div class="cal-day-label">M</div><div class="cal-day-label">T</div><div class="cal-day-label">W</div>
-        <div class="cal-day-label">T</div><div class="cal-day-label">F</div><div class="cal-day-label">S</div><div class="cal-day-label">S</div>
-      </div>
-      <div class="cal-grid" id="cal-grid-days"></div>
-    </div>
-
-    <div class="nav-list">
-      <div class="nav-item active" onclick="switchView('schedule')">📅 Workspace</div>
-      <div class="nav-item" onclick="switchView('history')">📜 History Log</div>
-      <div class="nav-item" onclick="exportData()">💾 Backup Data (.json)</div>
-      <div class="nav-item" onclick="triggerImport()">📥 Restore Data</div>
-      <input type="file" id="import-file" style="display:none" onchange="importData(event)"/>
-    </div>
-  </div>
-
-  <!-- Main Area -->
-  <div class="main-content">
-    <div class="top-bar">
-      <div class="date-nav">
-        <button class="date-btn" onclick="changeDate(-1)">❮</button>
-        <span id="current-date-title" style="font-weight: 600; font-size: 1.1rem;">-</span>
-        <button class="date-btn" onclick="changeDate(1)">❯</button>
-        <button class="date-btn" id="today-jump-btn" style="display:none; background: var(--accent);" onclick="jumpToToday()">Jump to Today</button>
-      </div>
-      <div class="clock-display" id="live-clock">12:00:00 PM</div>
-    </div>
-
-    <div class="workspace">
-      <!-- Left Schedule Panel -->
-      <div class="schedule-panel">
-        <div class="control-card">
-          <div>
-            <label style="font-size:0.85rem; color: var(--text-muted);">Active Hours</label>
-            <div style="display:flex; gap:10px; margin-top:4px;">
-              <input type="time" id="start-time" value="11:00" onchange="saveActiveHours()" style="background:var(--bg-dark); color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:6px;"/>
-              <span style="align-self:center;">to</span>
-              <input type="time" id="end-time" value="21:00" onchange="saveActiveHours()" style="background:var(--bg-dark); color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:6px;"/>
-            </div>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button class="btn-action" style="background:var(--card-dark);" onclick="openNewTaskModal()">+ Add Task</button>
-            <button class="btn-action" onclick="autoSchedule()">Auto Schedule</button>
-          </div>
-        </div>
-
-        <!-- Task Timeline -->
-        <h3 style="font-size:1rem; color:var(--text-muted); margin-top:5px;">ACTIVE SCHEDULE</h3>
-        <div class="task-list" id="active-tasks"></div>
-
-        <h3 style="font-size:1rem; color:var(--text-muted); margin-top:15px;">COMPLETED TASKS</h3>
-        <div class="task-list" id="completed-tasks"></div>
-      </div>
-
-      <!-- Right Panel / Notes -->
-      <div class="side-panel">
-        <div class="notes-card">
-          <h3 style="font-size: 1rem;">Daily Scratchpad / Notes</h3>
-          <textarea id="scratchpad-notes" placeholder="Type your daily notes, ideas, or reminders here..." oninput="saveNotes()"></textarea>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add Task Modal -->
-  <div class="modal-overlay" id="task-modal">
-    <div class="modal">
-      <h3>Add New Task Block</h3>
-      <input type="text" id="modal-task-title" placeholder="Task Title" style="width:100%; padding:10px; background:var(--bg-dark); border:1px solid var(--border); border-radius:6px; color:#fff;"/>
-      <div style="display:flex; gap:10px;">
-        <input type="number" id="modal-task-duration" placeholder="Duration (mins)" value="30" style="flex:1; padding:10px; background:var(--bg-dark); border:1px solid var(--border); border-radius:6px; color:#fff;"/>
-        <select id="modal-task-repeat" style="flex:1; padding:10px; background:var(--bg-dark); border:1px solid var(--border); border-radius:6px; color:#fff;">
-          <option value="daily">Daily Repeat</option>
-          <option value="never">Selected Date Only</option>
-        </select>
-      </div>
-      <div class="modal-actions">
-        <button class="date-btn" onclick="closeTaskModal()">Cancel</button>
-        <button class="btn-action" onclick="createTaskFromModal()">Save Task</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // State Management
-    let selectedDate = new Date();
-    const todayDateStr = formatDateKey(new Date());
-
-    const defaultTasks = [
-      { id: '1', title: 'Focused session 1', duration: 60, repeat: 'daily', completed: false },
-      { id: '2', title: 'Focused session 2', duration: 60, repeat: 'daily', completed: false },
-      { id: '3', title: 'Walking session 1', duration: 30, repeat: 'daily', completed: false },
-      { id: '4', title: 'Walking session 2', duration: 30, repeat: 'daily', completed: false },
-      { id: '5', title: 'Gym', duration: 90, repeat: 'daily', completed: false },
-      { id: '6', title: 'Dinner', duration: 60, repeat: 'daily', completed: false }
-    ];
-
-    let store = JSON.parse(localStorage.getItem('auto_scheduler_db')) || {
-      tasksByDate: {},
-      notesByDate: {},
-      activeHours: { start: '11:00', end: '21:00' }
-    };
-
-    function saveStore() {
-      localStorage.setItem('auto_scheduler_db', JSON.stringify(store));
-      broadcastChange();
-    }
-
-    const broadcast = new BroadcastChannel('auto_scheduler_sync');
-    broadcast.onmessage = () => {
-      store = JSON.parse(localStorage.getItem('auto_scheduler_db'));
-      render();
-    };
-    function broadcastChange() { broadcast.postMessage('update'); }
-
-    function formatDateKey(d) {
-      return d.toISOString().split('T')[0];
-    }
-
-    function getTasksForSelectedDate() {
-      const key = formatDateKey(selectedDate);
-      if (!store.tasksByDate[key]) {
-        // Inherit daily repeaters from default/previous setup
-        store.tasksByDate[key] = defaultTasks.map(t => ({ ...t, id: Math.random().toString() }));
-        saveStore();
-      }
-      return store.tasksByDate[key];
-    }
-
-    // Live Clock
-    function startClock() {
-      const update = () => {
-        const now = new Date();
-        document.getElementById('live-clock').innerText = now.toLocaleTimeString('en-US', { hour12: true });
-      };
-      update();
-      setInterval(update, 1000);
-    }
-
-    // Render Calendar
-    function renderCalendar() {
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth();
-      const firstDay = new Date(year, month, 1).getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      document.getElementById('cal-month-year').innerText = selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      const grid = document.getElementById('cal-grid-days');
-      grid.innerHTML = '';
-
-      const offset = (firstDay === 0 ? 6 : firstDay - 1);
-      for (let i = 0; i < offset; i++) {
-        grid.appendChild(document.createElement('div'));
-      }
-
-      for (let d = 1; d <= daysInMonth; d++) {
-        const cell = document.createElement('div');
-        cell.className = 'cal-date';
-        cell.innerText = d;
-        const cellDate = new Date(year, month, d);
-        const cellKey = formatDateKey(cellDate);
-
-        if (cellKey === formatDateKey(selectedDate)) cell.classList.add('active');
-        if (cellKey === todayDateStr) cell.classList.add('today');
-
-        cell.onclick = () => {
-          selectedDate = cellDate;
-          render();
-        };
-        grid.appendChild(cell);
-      }
-    }
-
-    // Render Main View
-    function render() {
-      renderCalendar();
-      const key = formatDateKey(selectedDate);
-      
-      // Header Title
-      const isToday = key === todayDateStr;
-      document.getElementById('current-date-title').innerText = isToday 
-        ? `Today (${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`
-        : selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      
-      document.getElementById('today-jump-btn').style.display = isToday ? 'none' : 'inline-block';
-
-      // Active Hours
-      document.getElementById('start-time').value = store.activeHours.start || '11:00';
-      document.getElementById('end-time').value = store.activeHours.end || '21:00';
-
-      // Notes
-      document.getElementById('scratchpad-notes').value = store.notesByDate[key] || '';
-
-      // Tasks
-      const tasks = getTasksForSelectedDate();
-      const activeContainer = document.getElementById('active-tasks');
-      const completedContainer = document.getElementById('completed-tasks');
-      activeContainer.innerHTML = '';
-      completedContainer.innerHTML = '';
-
-      tasks.forEach((task, index) => {
-        const card = createCardElement(task, index);
-        if (task.completed) {
-          completedContainer.appendChild(card);
-        } else {
-          activeContainer.appendChild(card);
-        }
-      });
-    }
-
-    function createCardElement(task, index) {
-      const card = document.createElement('div');
-      card.className = `task-card ${task.completed ? 'completed' : ''}`;
-      card.draggable = !task.completed;
-      card.dataset.index = index;
-
-      const timeSlot = task.startTime ? `${task.startTime} - ${task.endTime}` : `${task.duration} mins`;
-
-      card.innerHTML = `
-        <div class="task-info">
-          <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete('${task.id}')"/>
-          <span class="drag-handle">⋮⋮</span>
-          <div>
-            <div style="font-weight: 600;">${task.title}</div>
-            <div style="font-size:0.8rem; color:var(--text-muted);">${timeSlot}</div>
-          </div>
-        </div>
-        <button onclick="deleteTask('${task.id}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">✕</button>
-      `;
-
-      // Drag and drop event handling
-      card.addEventListener('dragstart', handleDragStart);
-      card.addEventListener('dragover', handleDragOver);
-      card.addEventListener('dragleave', handleDragLeave);
-      card.addEventListener('drop', handleDrop);
-      card.addEventListener('dragend', handleDragEnd);
-
-      return card;
-    }
-
-    // Drag and Drop Logic
-    let draggedIndex = null;
-    function handleDragStart(e) {
-      draggedIndex = +this.dataset.index;
-      this.classList.add('dragging');
-    }
-    function handleDragOver(e) {
-      e.preventDefault();
-      this.classList.add('drop-target-above');
-    }
-    function handleDragLeave() {
-      this.classList.remove('drop-target-above');
-    }
-    function handleDrop(e) {
-      e.preventDefault();
-      this.classList.remove('drop-target-above');
-      const targetIndex = +this.dataset.index;
-      const tasks = getTasksForSelectedDate();
-
-      const [movedItem] = tasks.splice(draggedIndex, 1);
-      tasks.splice(targetIndex, 0, movedItem);
-
-      saveStore();
-      autoSchedule();
-    }
-    function handleDragEnd() {
-      this.classList.remove('dragging');
-    }
-
-    // Auto-Scheduler Functionality
-    function autoSchedule() {
-      const tasks = getTasksForSelectedDate();
-      let [startH, startM] = store.activeHours.start.split(':').map(Number);
-      let current = new Date();
-      current.setHours(startH, startM, 0, 0);
-
-      tasks.forEach(task => {
-        if (!task.completed) {
-          const startStr = current.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-          current.setMinutes(current.getMinutes() + task.duration);
-          const endStr = current.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-          task.startTime = startStr;
-          task.endTime = endStr;
-        }
-      });
-
-      saveStore();
-      render();
-    }
-
-    // Interactive Handlers
-    function toggleTaskComplete(id) {
-      const tasks = getTasksForSelectedDate();
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        task.completed = !task.completed;
-        saveStore();
-        if (task.completed) autoSchedule();
-        else render();
-      }
-    }
-
-    function deleteTask(id) {
-      const key = formatDateKey(selectedDate);
-      store.tasksByDate[key] = store.tasksByDate[key].filter(t => t.id !== id);
-      saveStore();
-      render();
-    }
-
-    function saveActiveHours() {
-      store.activeHours.start = document.getElementById('start-time').value;
-      store.activeHours.end = document.getElementById('end-time').value;
-      saveStore();
-    }
-
-    function saveNotes() {
-      const key = formatDateKey(selectedDate);
-      store.notesByDate[key] = document.getElementById('scratchpad-notes').value;
-      saveStore();
-    }
-
-    function changeDate(days) {
-      selectedDate.setDate(selectedDate.getDate() + days);
-      render();
-    }
-
-    function jumpToToday() {
-      selectedDate = new Date();
-      render();
-    }
-
-    // Modal Handling
-    function openNewTaskModal() { document.getElementById('task-modal').style.display = 'flex'; }
-    function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; }
-    function createTaskFromModal() {
-      const title = document.getElementById('modal-task-title').value || 'New Task';
-      const duration = parseInt(document.getElementById('modal-task-duration').value) || 30;
-      const repeat = document.getElementById('modal-task-repeat').value;
-
-      const newTask = { id: Math.random().toString(), title, duration, repeat, completed: false };
-      getTasksForSelectedDate().push(newTask);
-      saveStore();
-      closeTaskModal();
-      render();
-    }
-
-    // Export/Import System
-    function exportData() {
-      const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `AutoScheduler_Backup_${formatDateKey(new Date())}.json`;
-      a.click();
-    }
-    function triggerImport() { document.getElementById('import-file').click(); }
-    function importData(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          store = JSON.parse(event.target.result);
-          saveStore();
-          render();
-          alert('Data successfully restored!');
-        } catch (err) {
-          alert('Invalid backup file format.');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // Initialization
-    startClock();
-    render();
-  </script>
-</body>
-</html>
+    .date-nav { display: flex; align-items: center; gap: 16px; }
+    .date-title { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .date-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .date-btn:hover { background: rgba(255,255,255,0.1
