@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Auto-Scheduler App</title>
+  <style>
+    :root {
+      --bg-dark: #0a0d14;
+      --sidebar-bg: #121824;
+      --card-bg: rgba(22, 30, 46, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #ff3b5c;
+      --accent-glow: rgba(255, 59, 92, 0.35);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; padding: 24px 18px; gap: 24px; z-index: 10; }
+    .brand { font-size: 1.25rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
+    .brand span { color: var(--accent); }
+
+    /* Calendar Widget */
+    .cal-widget { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 14px; }
+    .cal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; color: var(--text-main); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .cal-day-label { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; padding-bottom: 6px; }
+    .cal-date { padding: 7px 0; border-radius: 8px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+    .cal-date:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .cal-date.active { background: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 0 12px var(--accent-glow); }
+    .cal-date.today { border: 1px solid var(--accent); }
+
+    /* Nav items */
+    .nav-list { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+    .nav-item { padding: 12px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.05); color: #fff; }
+    .nav-item.active { border-left: 3px solid var(--accent); }
+
+    /* Main Area */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(circle at top right, rgba(255, 59, 92, 0.05), transparent 40%); }
+    .top-bar { height: 75px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; padding: 0 32px; background: rgba(18, 24, 36, 0.6); backdrop-filter: blur(15px); }
+    
+    .date-nav { display: flex; align-items: center; gap: 16px; }
+    .date-title { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .date-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .date-btn:hover { background: rgba(255,255,255,0.12); }
+
+    .header-right { display: flex; align-items: center; gap: 20px; }
+    .clock-display { font-size: 1.1rem; font-weight: 700; font-family: monospace; background: rgba(255,255,255,0.04); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--card-border); }
+
+    /* Workspace */
+    .workspace { flex: 1; display: flex; padding: 24px 32px; gap: 24px; overflow-y: auto; }
+    .schedule-panel { flex: 1.4; display: flex; flex-direction: column; gap: 20px; }
+    .side-panel { flex: 0.8; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Control Card */
+    .control-card { background: var(--card-bg); border-radius: var(--radius); padding: 18px 24px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .active-hours-wrap { display: flex; align-items: center; gap: 10px; }
+    .active-hours-wrap input { background: rgba(0,0,0,0.3); color: #fff; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+
+    .btn-action { background: linear-gradient(135deg, var(--accent), #e02e4c); border: none; color: white; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px var(--accent-glow); }
+    .btn-action:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+    .btn-secondary { background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+    /* Section Titles */
+    .section-title { font-size: 0.85rem; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 10px; }
+
+    /* Task Cards */
+    .task-list { display: flex; flex-direction: column; gap: 12px; min-height: 50px; }
+    .task-card { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(10px); transition: all 0.2s ease; position: relative; }
+    .task-card:hover { border-color: rgba(255, 255, 255, 0.2); transform: translateX(3px); }
+    .task-card.dragging { opacity: 0.3; border: 2px dashed var(--accent); }
+    .task-card.drop-target-above { border-top: 3px solid var(--accent); }
+    .task-card.completed { opacity: 0.5; background: rgba(15, 23, 42, 0.4); }
+    .task-card.completed .task-title { text-decoration: line-through; color: var(--text-muted); }
+
+    .task-left { display: flex; align-items: center; gap: 16px; }
+    .drag-handle { color: var(--text-muted); cursor: grab; font-size: 1.1rem; padding: 4px; transition: 0.2s; display: flex; align-items: center; }
+    .drag-handle:hover { color: #fff; }
+    .task-checkbox { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; border-radius: 6px; }
+
+    .task-title { font-weight: 700; font-size: 1rem; color: #fff; margin-bottom: 2px; }
+    .task-time { font-size: 0.82rem; color: var(--text-muted); font-weight: 500; }
+
+    .task-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 6px; border-radius: 6px; transition: 0.2s; display: flex; align-items: center; }
+    .task-delete:hover { color: var(--accent); background: rgba(255, 59, 92, 0.1); }
+
+    /* Scratchpad Notes */
+    .notes-card { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--card-border); flex: 1; display: flex; flex-direction: column; gap: 12px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .notes-card textarea { width: 100%; flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px; color: var(--text-main); resize: none; font-size: 0.95rem; line-height: 1.6; outline: none; transition: 0.2s; }
+    .notes-card textarea:focus { border-color: var(--accent); }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 100; }
+    .modal { background: var(--sidebar-bg); width: 440px; border-radius: var(--radius); border: 1px solid var(--card-border); padding: 24px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .modal h3 { font-size: 1.2rem; font-weight: 800; }
+    .modal input, .modal select { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--card-border); border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="brand"><span>⚡</span> AutoScheduler</div>
+    
+    <!-- Mini Calendar -->
+    <div class="cal-widget">
+      <div class="cal-header">
+        <span id="cal-month-year">October 2026</span>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day-label">M</div><div class="cal-day-label">T</div><div class="cal-day-label">W</div>
+        <div class="cal-day-label">T</div><div class="cal-day-label">F</div><div class="cal-day-label">S</div><div class="cal-day-label">S</div>
+      </div>
+      <div class="cal-grid" id="cal-grid-days"></div>
+    </div>
+
+    <div class="nav-list">
+      <div class="nav-item active" onclick="jumpToToday()">📅 Workspace</div>
+      <div class="nav-item" onclick="resetAppStorage()">🔄 Clear Cache</div>
+      <div class="nav-item" onclick="exportData()">💾 Backup Data (.json)</div>
+      <div class="nav-item" onclick="triggerImport()">📥 Restore Data</div>
+      <input type="file" id="import-file" style="display:none" onchange="importData(event)"/>
+    </div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="main-content">
+    <div class="top-bar">
+      <div class="date-nav">
+        <button class="date-btn" onclick="changeDate(-1)">❮</button>
+        <span class="date-title" id="current-date-title">-</span>
+        <button class="date-btn" onclick="changeDate(1)">❯</button>
+        <button class="btn-secondary" id="today-jump-btn" style="display:none; padding: 6px 14px; font-size: 0.85rem;" onclick="jumpToToday()">Today</button>
+      </div>
+
+      <div class="header-right">
+        <div class="clock-display" id="live-clock">12:00:00 PM</div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <!-- Left Schedule Panel -->
+      <div class="schedule-panel">
+        <div class="control-card">
+          <div class="active-hours-wrap">
+            <span style="font-size:0.85rem; font-weight:700; color: var(--text-muted); text-transform:uppercase;">Active Hours</span>
+            <input type="time" id="start-time" value="11:00" onchange="saveActiveHours()"/>
+            <span style="color:var(--text-muted); font-size:0.9rem;">to</span>
+            <input type="time" id="end-time" value="21:00" onchange="saveActiveHours()"/>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button class="btn-secondary" onclick="openNewTaskModal()">+ Add Task</button>
+            <button class="btn-action" onclick="autoSchedule()">🪄 Auto Schedule</button>
+          </div>
+        </div>
+
+        <!-- Task Timeline -->
+        <div class="section-title">Active Schedule</div>
+        <div class="task-list" id="active-tasks"></div>
+
+        <div class="section-title">Completed Tasks</div>
+        <div class="task-list" id="completed-tasks"></div>
+      </div>
+
+      <!-- Right Panel / Notes -->
+      <div class="side-panel">
+        <div class="notes-card">
+          <div style="font-size: 1rem; font-weight: 700; color: #fff;">📝 Daily Scratchpad / Notes</div>
+          <textarea id="scratchpad-notes" placeholder="Type your notes, thoughts, or reminders here..." oninput="saveNotes()"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <h3>Add New Task Block</h3>
+      <input type="text" id="modal-task-title" placeholder="Task Title"/>
+      <div style="display:flex; gap:12px;">
+        <input type="number" id="modal-task-duration" placeholder="Duration (mins)" value="30"/>
+        <select id="modal-task-repeat">
+          <option value="daily">Daily Repeat</option>
+          <option value="never">Selected Date Only</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+        <button class="btn-action" onclick="createTaskFromModal()">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedDate = new Date();
+
+    function formatDateKey(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    const todayDateStr = formatDateKey(new Date());
+
+    const defaultTasks = [
+      { id: '1', title: 'Focused session 1', duration: 60, repeat: 'daily', completed: false },
+      { id: '2', title: 'Focused session 2', duration: 60, repeat: 'daily', completed: false },
+      { id: '3', title: 'Walking session 1', duration: 30, repeat: 'daily', completed: false },
+      { id: '4', title: 'Walking session 2', duration: 30, repeat: 'daily', completed: false },
+      { id: '5', title: 'Gym', duration: 90, repeat: 'daily', completed: false },
+      { id: '6', title: 'Dinner', duration: 60, repeat: 'daily', completed: false }
+    ];
+
+    let store;
+    try {
+      const parsed = JSON.parse(localStorage.getItem('auto_scheduler_db'));
+      if (parsed && typeof parsed === 'object' && parsed.tasksByDate) {
+        store = parsed;
+      } else {
+        throw new Error("Invalid schema");
+      }
+    } catch (e) {
+      store = {
+        tasksByDate: {},
+        notesByDate: {},
+        activeHours: { start: '11:00', end: '21:00' }
+      };
+    }
+
+    function resetAppStorage() {
+      localStorage.removeItem('auto_scheduler_db');
+      store = {
+        tasksByDate: {},
+        notesByDate: {},
+        activeHours: { start: '11:00', end: '21:00' }
+      };
+      saveStore();
+      render();
+    }
+
+    function saveStore() {
+      localStorage.setItem('auto_scheduler_db', JSON.stringify(store));
+      broadcastChange();
+    }
+
+    const broadcast = new BroadcastChannel('auto_scheduler_sync');
+    broadcast.onmessage = () => {
+      try {
+        store = JSON.parse(localStorage.getItem('auto_scheduler_db'));
+        render();
+      } catch(e) {}
+    };
+    function broadcastChange() { broadcast.postMessage('update'); }
+
+    function getTasksForSelectedDate() {
+      const key = formatDateKey(selectedDate);
+      if (!store.tasksByDate[key]) {
+        store.tasksByDate[key] = defaultTasks.map(t => ({ ...t, id: Math.random().toString() }));
+        saveStore();
+      }
+      return store.tasksByDate[key];
+    }
+
+    // Live Clock (12-Hour AM/PM)
+    function startClock() {
+      const update = () => {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString('en-US', { hour12: true });
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    // Mini Calendar
+    function renderCalendar() {
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      document.getElementById('cal-month-year').innerText = selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const grid = document.getElementById('cal-grid-days');
+      grid.innerHTML = '';
+
+      const offset = (firstDay === 0 ? 6 : firstDay - 1);
+      for (let i = 0; i < offset; i++) {
+        grid.appendChild(document.createElement('div'));
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-date';
+        cell.innerText = d;
+        const cellDate = new Date(year, month, d);
+        const cellKey = formatDateKey(cellDate);
+
+        if (cellKey === formatDateKey(selectedDate)) cell.classList.add('active');
+        if (cellKey === todayDateStr) cell.classList.add('today');
+
+        cell.onclick = () => {
+          selectedDate = cellDate;
+          render();
+        };
+        grid.appendChild(cell);
+      }
+    }
+
+    // Main Render Loop
+    function render() {
+      renderCalendar();
+      const key = formatDateKey(selectedDate);
+      
+      const isToday = key === todayDateStr;
+      document.getElementById('current-date-title').innerText = isToday 
+        ? `Today (${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`
+        : selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      
+      document.getElementById('today-jump-btn').style.display = isToday ? 'none' : 'inline-block';
+
+      document.getElementById('start-time').value = (store.activeHours && store.activeHours.start) || '11:00';
+      document.getElementById('end-time').value = (store.activeHours && store.activeHours.end) || '21:00';
+      document.getElementById('scratchpad-notes').value = (store.notesByDate && store.notesByDate[key]) || '';
+
+      const tasks = getTasksForSelectedDate();
+      const activeContainer = document.getElementById('active-tasks');
+      const completedContainer = document.getElementById('completed-tasks');
+      activeContainer.innerHTML = '';
+      completedContainer.innerHTML = '';
+
+      tasks.forEach((task, index) => {
+        const card = createCardElement(task, index);
+        if (task.completed) {
+          completedContainer.appendChild(card);
+        } else {
+          activeContainer.appendChild(card);
+        }
+      });
+    }
+
+    function createCardElement(task, index) {
+      const card = document.createElement('div');
+      card.className = `task-card ${task.completed ? 'completed' : ''}`;
+      card.draggable = !task.completed;
+      card.dataset.index = index;
+
+      const timeSlot = task.startTime ? `${task.startTime} - ${task.endTime}` : `${task.duration} mins`;
+
+      card.innerHTML = `
+        <div class="task-left">
+          <span class="drag-handle">⋮⋮</span>
+          <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTaskComplete('${task.id}')"/>
+          <div>
+            <div class="task-title">${task.title}</div>
+            <div class="task-time">${timeSlot}</div>
+          </div>
+        </div>
+        <button class="task-delete" onclick="deleteTask('${task.id}')">✕</button>
+      `;
+
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragover', handleDragOver);
+      card.addEventListener('dragleave', handleDragLeave);
+      card.addEventListener('drop', handleDrop);
+      card.addEventListener('dragend', handleDragEnd);
+
+      return card;
+    }
+
+    // Drag-and-Drop Handlers
+    let draggedIndex = null;
+    function handleDragStart(e) {
+      draggedIndex = +this.dataset.index;
+      this.classList.add('dragging');
+    }
+    function handleDragOver(e) {
+      e.preventDefault();
+      this.classList.add('drop-target-above');
+    }
+    function handleDragLeave() {
+      this.classList.remove('drop-target-above');
+    }
+    function handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drop-target-above');
+      const targetIndex = +this.dataset.index;
+      const tasks = getTasksForSelectedDate();
+
+      const [movedItem] = tasks.splice(draggedIndex, 1);
+      tasks.splice(targetIndex, 0, movedItem);
+
+      saveStore();
+      autoSchedule();
+    }
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+    }
+
+    // Auto Schedule
+    function autoSchedule() {
+      const tasks = getTasksForSelectedDate();
+      let [startH, startM] = (store.activeHours.start || '11:00').split(':').map(Number);
+      let current = new Date();
+      current.setHours(startH, startM, 0, 0);
+
+      tasks.forEach(task => {
+        if (!task.completed) {
+          const startStr = current.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          current.setMinutes(current.getMinutes() + task.duration);
+          const endStr = current.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          task.startTime = startStr;
+          task.endTime = endStr;
+        }
+      });
+
+      saveStore();
+      render();
+    }
+
+    function toggleTaskComplete(id) {
+      const tasks = getTasksForSelectedDate();
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        saveStore();
+        if (task.completed) autoSchedule();
+        else render();
+      }
+    }
+
+    function deleteTask(id) {
+      const key = formatDateKey(selectedDate);
+      store.tasksByDate[key] = store.tasksByDate[key].filter(t => t.id !== id);
+      saveStore();
+      render();
+    }
+
+    function saveActiveHours() {
+      store.activeHours.start = document.getElementById('start-time').value;
+      store.activeHours.end = document.getElementById('end-time').value;
+      saveStore();
+    }
+
+    function saveNotes() {
+      const key = formatDateKey(selectedDate);
+      store.notesByDate[key] = document.getElementById('scratchpad-notes').value;
+      saveStore();
+    }
+
+    function changeDate(days) {
+      selectedDate.setDate(selectedDate.getDate() + days);
+      render();
+    }
+
+    function jumpToToday() {
+      selectedDate = new Date();
+      render();
+    }
+
+    function openNewTaskModal() { document.getElementById('task-modal').style.display = 'flex'; }
+    function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; }
+    function createTaskFromModal() {
+      const title = document.getElementById('modal-task-title').value || 'New Task';
+      const duration = parseInt(document.getElementById('modal-task-duration').value) || 30;
+      const repeat = document.getElementById('modal-task-repeat').value;
+
+      const newTask = { id: Math.random().toString(), title, duration, repeat, completed: false };
+      getTasksForSelectedDate().push(newTask);
+      saveStore();
+      closeTaskModal();
+      render();
+    }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `AutoScheduler_Backup_${formatDateKey(new Date())}.json`;
+      a.click();
+    }
+    function triggerImport() { document.getElementById('import-file').click(); }
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          store = JSON.parse(event.target.result);
+          saveStore();
+          render();
+          alert('Data successfully restored!');
+        } catch (err) {
+          alert('Invalid backup file format.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    startClock();
+    render();
+  </script>
+</body>
+</html>
